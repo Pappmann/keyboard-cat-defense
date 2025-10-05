@@ -1,0 +1,32 @@
+name: Build extension package
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare build
+        run: sudo apt-get update && sudo apt-get install -y zip
+
+      - name: Build extension archive
+        run: ./build.sh keyboard-cat-defense@onel.github.io.zip
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: auto-${{ github.sha }}
+          name: Auto build for ${{ github.sha }}
+          body: |
+            Automated build triggered by ${{ github.event_name }} on ${{ github.ref }}.
+          draft: false
+          prerelease: true
+          files: keyboard-cat-defense@onel.github.io.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
