@@ -4,6 +4,7 @@ import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
+import * as ByteArray from 'resource:///org/gnome/gjs/modules/byteArray.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
@@ -89,14 +90,14 @@ class KeyboardListMenu extends PanelMenu.Button {
         if (!this._deviceControlAvailable)
             return [];
 
-        const {success, stdout, stderr} = this._runXinput(['list']);
+        const [success, stdout, stderr] = GLib.spawn_command_line_sync('xinput list');
         if (!success) {
-            logError(new Error(`Error executing xinput list: ${stderr}`));
+            logError(new Error(`Error executing xinput list: ${ByteArray.toString(stderr)}`));
             return [];
         }
 
         const keyboards = [];
-        const lines = stdout.split('\n');
+        const lines = ByteArray.toString(stdout).split('\n');
         const keyboardIdRegex = /id=(\d+)/;
 
         for (const line of lines) {
@@ -130,10 +131,11 @@ class KeyboardListMenu extends PanelMenu.Button {
         if (!this._deviceControlAvailable)
             return;
 
-        const {success, stderr} = this._runXinput(['--disable', keyboardId]);
+        const command = `xinput --disable ${keyboardId}`;
+        const [success, _stdout, stderr] = GLib.spawn_command_line_sync(command);
 
         if (!success)
-            logError(new Error(`Error deactivating keyboard: ${stderr}`));
+            logError(new Error(`Error deactivating keyboard: ${ByteArray.toString(stderr)}`));
     }
 
     /**
@@ -144,35 +146,11 @@ class KeyboardListMenu extends PanelMenu.Button {
         if (!this._deviceControlAvailable)
             return;
 
-        const {success, stderr} = this._runXinput(['--enable', keyboardId]);
+        const command = `xinput --enable ${keyboardId}`;
+        const [success, _stdout, stderr] = GLib.spawn_command_line_sync(command);
 
         if (!success)
-            logError(new Error(`Error enabling keyboard: ${stderr}`));
-    }
-
-    _runXinput(args) {
-        try {
-            const subprocess = new Gio.Subprocess({
-                argv: ['xinput', ...args.map(String)],
-                flags: Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE,
-            });
-
-            const [ok, stdout, stderr] = subprocess.communicate_utf8(null, null);
-            const success = ok && subprocess.get_successful();
-
-            return {
-                success,
-                stdout: stdout ?? '',
-                stderr: stderr ?? '',
-            };
-        } catch (error) {
-            logError(error);
-            return {
-                success: false,
-                stdout: '',
-                stderr: error?.message ?? String(error),
-            };
-        }
+            logError(new Error(`Error enabling keyboard: ${ByteArray.toString(stderr)}`));
     }
 }
 );
