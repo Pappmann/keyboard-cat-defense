@@ -4,31 +4,11 @@ import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
+import * as ByteArray from 'resource:///org/gnome/gjs/modules/byteArray.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
-
-const UTF8_DECODER = new TextDecoder('utf-8');
-
-function bytesToString(bytes) {
-    if (!bytes)
-        return '';
-
-    if (bytes instanceof GLib.Bytes || bytes?.toArray instanceof Function)
-        return UTF8_DECODER.decode(bytes.toArray());
-
-    if (bytes instanceof Uint8Array)
-        return UTF8_DECODER.decode(bytes);
-
-    if (bytes instanceof ArrayBuffer)
-        return UTF8_DECODER.decode(new Uint8Array(bytes));
-
-    if (Array.isArray(bytes))
-        return UTF8_DECODER.decode(Uint8Array.from(bytes));
-
-    return bytes?.toString?.() ?? '';
-}
 
 const KEYBOARD_LIST_HEADING = 'List of connected keyboards:';
 const WAYLAND_UNSUPPORTED_MESSAGE = 'Keyboard control is not available while running under Wayland.';
@@ -112,12 +92,12 @@ class KeyboardListMenu extends PanelMenu.Button {
 
         const [success, stdout, stderr] = GLib.spawn_command_line_sync('xinput list');
         if (!success) {
-            logError(new Error(`Error executing xinput list: ${bytesToString(stderr)}`));
+            logError(new Error(`Error executing xinput list: ${ByteArray.toString(stderr)}`));
             return [];
         }
 
         const keyboards = [];
-        const lines = bytesToString(stdout).split('\n');
+        const lines = ByteArray.toString(stdout).split('\n');
         const keyboardIdRegex = /id=(\d+)/;
 
         for (const line of lines) {
@@ -155,7 +135,7 @@ class KeyboardListMenu extends PanelMenu.Button {
         const [success, _stdout, stderr] = GLib.spawn_command_line_sync(command);
 
         if (!success)
-            logError(new Error(`Error deactivating keyboard: ${bytesToString(stderr)}`));
+            logError(new Error(`Error deactivating keyboard: ${ByteArray.toString(stderr)}`));
     }
 
     /**
@@ -170,7 +150,7 @@ class KeyboardListMenu extends PanelMenu.Button {
         const [success, _stdout, stderr] = GLib.spawn_command_line_sync(command);
 
         if (!success)
-            logError(new Error(`Error enabling keyboard: ${bytesToString(stderr)}`));
+            logError(new Error(`Error enabling keyboard: ${ByteArray.toString(stderr)}`));
     }
 }
 );
